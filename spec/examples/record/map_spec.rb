@@ -5,7 +5,7 @@ describe Cequel::Record::Map do
   model :Post do
     key :permalink, :text
     column :title, :text
-    map :likes, :text, :int
+    map :likes, :text, :bigint
   end
 
   let(:scope) { cequel[Post.table_name].where(:permalink => 'cequel') }

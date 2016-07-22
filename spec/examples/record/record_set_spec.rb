@@ -17,7 +17,7 @@ describe Cequel::Record::RecordSet do
     column :author_name, :text, index: true
     list :tags, :text
     set :categories, :text
-    map :shares, :text, :int
+    map :shares, :text, :bigint
 
     def self.latest(count)
       reverse.limit(count)

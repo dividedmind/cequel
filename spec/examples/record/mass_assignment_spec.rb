@@ -38,7 +38,7 @@ describe Cequel::Record::MassAssignment do
     model :Post do
       key :permalink, :text
       column :title, :text
-      column :page_views, :int
+      column :page_views, :bigint
 
       attr_accessible :title
     end

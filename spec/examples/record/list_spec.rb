@@ -6,7 +6,7 @@ describe Cequel::Record::List do
     key :permalink, :text
     column :title, :text
     list :tags, :text
-    list :contributor_ids, :int
+    list :contributor_ids, :bigint
   end
 
   let(:scope) { cequel[Post.table_name].where(:permalink => 'cequel') }

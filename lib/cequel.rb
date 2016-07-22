@@ -14,6 +14,7 @@ require 'cequel/type'
 require 'cequel/uuids'
 require 'cequel/instrumentation'
 require 'cequel/record'
+require 'cequel/patch/guess_type'
 
 #
 # Cequel is a library providing robust data modeling and query building

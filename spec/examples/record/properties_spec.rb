@@ -9,7 +9,7 @@ describe Cequel::Record::Properties do
       column :title, :text
       list :tags, :text
       set :categories, :text
-      map :shares, :text, :int
+      map :shares, :text, :bigint
 
       def downcased_title=(downcased_title)
         self.title = downcased_title.titleize
@@ -152,7 +152,7 @@ describe Cequel::Record::Properties do
       column :title, :text, :default => 'New Post'
       list :tags, :text, :default => ['new']
       set :categories, :text, :default => Set['Big Data']
-      map :shares, :text, :int, :default => {'facebook' => 0}
+      map :shares, :text, :bigint, :default => {'facebook' => 0}
     end
 
     it 'should respect default for keys' do

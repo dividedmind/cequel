@@ -40,7 +40,7 @@ module Cequel
           if @value.length == 1
             ["#{@column} = ?", @value.first]
           else
-            ["#{@column} IN (?)", @value]
+            ["#{@column} IN ?", @value]
           end
         else
           ["#{@column} = ?", @value]

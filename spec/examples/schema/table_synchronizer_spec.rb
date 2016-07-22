@@ -113,7 +113,7 @@ describe Cequel::Schema::TableSynchronizer do
           cequel.schema.sync_table table_name do
             key :blog_subdomain, :text
             key :permalink, :text
-            key :year, :int
+            key :year, :bigint
             column :title, :ascii
             column :body, :text
             column :created_at, :timestamp
@@ -170,7 +170,7 @@ describe Cequel::Schema::TableSynchronizer do
             key :blog_subdomain, :text
             key :permalink, :text
             column :title, :ascii, :index => true
-            column :body, :int
+            column :body, :bigint
             column :created_at, :timestamp
             set :author_names, :text
             with :comment, 'Test Table'
