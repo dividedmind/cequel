@@ -68,6 +68,12 @@ module Cequel
       def_delegator :@updater, :rename_column
 
       #
+      # @!method drop_column(old_name, new_name)
+      #   (see Cequel::Schema::TableUpdater#drop_column)
+      #
+      def_delegator :@updater, :drop_column
+
+      #
       # @!method change_properties(options)
       #   (see Cequel::Schema::TableUpdater#change_properties)
       #

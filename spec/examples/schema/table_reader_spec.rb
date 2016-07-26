@@ -295,16 +295,16 @@ describe Cequel::Schema::TableReader do
     end
 
     it 'should read and simplify compression class' do
-      expect(table.property(:compression)[:sstable_compression]).
+      expect(table.property(:compression)[:class]).
         to eq('DeflateCompressor')
     end
 
     it 'should read integer properties from compression class' do
-      expect(table.property(:compression)[:chunk_length_kb]).to eq(128)
+      expect(table.property(:compression)[:chunk_length_in_kb]).to eq(128)
     end
 
-    it 'should read float properties from compression class' do
-      expect(table.property(:compression)[:crc_check_chance]).to eq(0.5)
+    it 'should read float properties' do
+      expect(table.property(:crc_check_chance)).to eq(0.5)
     end
 
     it 'should recognize no compact storage' do

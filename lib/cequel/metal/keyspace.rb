@@ -252,7 +252,7 @@ module Cequel
       def exists?
         statement = <<-CQL
           SELECT keyspace_name
-          FROM system.schema_keyspaces
+          FROM system_schema.keyspaces
           WHERE keyspace_name = ?
         CQL
 
@@ -284,7 +284,7 @@ module Cequel
       end
 
       def client_options
-        {hosts: hosts, port: port}.tap do |options|
+        {hosts: hosts, port: port.to_i}.tap do |options|
           options.merge!(credentials) if credentials
           options.merge!(ssl_config) if ssl_config
           options.merge!(compression: client_compression) if client_compression

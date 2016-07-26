@@ -426,8 +426,8 @@ describe Cequel::Record::List do
       scope.list_prepend(:tags, 'zero')
       post.tags.unshift('minustwo', 'minusone')
       post.save
-      expect(subject[:tags]).to eq(%w(minustwo minusone zero one two))
-      expect(post.tags).to eq(%w(minustwo minusone one two))
+      expect(subject[:tags]).to match_array(%w(minustwo minusone zero one two))
+      expect(post.tags).to match_array(%w(minustwo minusone one two))
     end
 
     it 'should cast element before unshifting' do

@@ -29,7 +29,7 @@ describe Cequel::Schema::Keyspace do
     end
 
     let(:schema_config) do
-      connection.client.execute("SELECT * FROM system.schema_keyspaces WHERE keyspace_name = '#{keyspace_name}'").first
+      connection.client.execute("SELECT * FROM system_schema.keyspaces WHERE keyspace_name = '#{keyspace_name}'").first
     end
 
     context 'with default options' do
@@ -40,8 +40,10 @@ describe Cequel::Schema::Keyspace do
         expect(schema_config).to eq({
           "keyspace_name"=>keyspace_name,
           "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"1\"}"
+          "replication" => {
+            "class" => "org.apache.cassandra.locator.SimpleStrategy",
+            "replication_factor" => "1"
+          }
         })
       end
     end
@@ -54,8 +56,10 @@ describe Cequel::Schema::Keyspace do
         expect(schema_config).to eq({
           "keyspace_name"=>keyspace_name,
           "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"2\"}"
+          "replication" => {
+            "class" => "org.apache.cassandra.locator.SimpleStrategy",
+            "replication_factor" => "2"
+          }
         })
       end
     end
@@ -68,8 +72,10 @@ describe Cequel::Schema::Keyspace do
         expect(schema_config).to eq({
           "keyspace_name"=>keyspace_name,
           "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"2\"}"
+          "replication"=>{
+            "class" => "org.apache.cassandra.locator.SimpleStrategy",
+            "replication_factor" => "2"
+          }
         })
       end
 
@@ -90,8 +96,10 @@ describe Cequel::Schema::Keyspace do
         expect(schema_config).to eq({
           "keyspace_name"=>keyspace_name,
           "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"3\"}"
+          "replication" => {
+            "class" => "org.apache.cassandra.locator.SimpleStrategy",
+            "replication_factor" => "3"
+          }
         })
       end
     end
@@ -106,8 +114,11 @@ describe Cequel::Schema::Keyspace do
         expect(schema_config).to eq({
           "keyspace_name"=>keyspace_name,
           "durable_writes"=>true,
-          "strategy_class"=>"org.apache.cassandra.locator.NetworkTopologyStrategy",
-          "strategy_options"=>"{\"datacenter1\":\"3\",\"datacenter2\":\"2\"}"
+          "replication" => {
+            "class" => "org.apache.cassandra.locator.NetworkTopologyStrategy",
+            "datacenter1" => "3",
+            "datacenter2" => "2"
+          }
         })
       end
     end
@@ -122,8 +133,10 @@ describe Cequel::Schema::Keyspace do
         expect(schema_config).to eq({
           "keyspace_name"=>keyspace_name,
           "durable_writes"=>false,
-          "strategy_class"=>"org.apache.cassandra.locator.SimpleStrategy",
-          "strategy_options"=>"{\"replication_factor\":\"1\"}"
+          "replication"=>{
+            "class" => "org.apache.cassandra.locator.SimpleStrategy",
+            "replication_factor" => "1"
+          }
         })
       end
     end

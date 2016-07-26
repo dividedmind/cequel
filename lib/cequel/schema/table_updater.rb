@@ -115,6 +115,16 @@ module Cequel
       end
 
       #
+      # Drop a column
+      #
+      # @param name [Symbol] the name of the column
+      # @return [void]
+      #
+      def drop_column(name)
+        alter_table(%(DROP "#{name}"))
+      end
+
+      #
       # Change one or more table storage properties
       #
       # @param options [Hash] map of property names to new values

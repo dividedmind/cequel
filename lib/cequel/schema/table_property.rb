@@ -114,9 +114,9 @@ module Cequel
 
       def normalize_map_property(key, value)
         case key
-        when :sstable_compression
+        when :class
           value.sub(/^org\.apache\.cassandra\.io\.compress\./, '')
-        when :chunk_length_kb then value.to_i
+        when :chunk_length_in_kb then value.to_i
         when :crc_check_chance then value.to_f
         else value.to_s
         end

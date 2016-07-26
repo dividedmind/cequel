@@ -12,7 +12,7 @@ module Cequel
       REVERSED_TYPE_PATTERN =
         /^org\.apache\.cassandra\.db\.marshal\.ReversedType\((.+)\)$/
       COLLECTION_TYPE_PATTERN =
-        /^org\.apache\.cassandra\.db\.marshal\.(List|Set|Map)Type\((.+)\)$/
+        /^(list|set|map)<(.+)>$/
 
       # @return [Table] object representation of the table defined in the
       #   database
@@ -50,10 +50,8 @@ module Cequel
       #
       def read
         if table_data.present?
-          read_partition_keys
-          read_clustering_columns
-          read_data_columns
           read_properties
+          read_columns
           table
         end
       end
@@ -64,79 +62,76 @@ module Cequel
 
       private
 
-      # XXX This gets a lot easier in Cassandra 2.0: all logical columns
-      # (including keys) are returned from the `schema_columns` query, so
-      # there's no need to jump through all these hoops to figure out what the
-      # key columns look like.
-      #
-      # However, this approach works for both 1.2 and 2.0, so better to keep it
-      # for now. It will be worth refactoring this code to take advantage of
-      # 2.0's better interface in a future version of Cequel that targets 2.0+.
-      def read_partition_keys
-        validators = table_data['key_validator']
-        types = parse_composite_types(validators) || [validators]
-        columns = partition_columns.sort_by { |c| c['component_index'] }
-          .map { |c| c['column_name'] }
+      def recognize_storage
+        flags = table.property('flags')
+        columns = all_columns.sort_by { |c| c['position'] }
 
-        columns.zip(types) do |name, type|
-          table.add_partition_key(name.to_sym, Type.lookup_internal(type))
-        end
-      end
-
-      # XXX See comment on {read_partition_keys}
-      def read_clustering_columns
-        columns = cluster_columns.sort { |l, r| l['component_index'] <=> r['component_index'] }
-          .map { |c| c['column_name'] }
-        comparators = parse_composite_types(table_data['comparator'])
-        unless comparators
+        if flags.include? 'compound'
+          table.compact_storage = false
+        elsif flags.include? 'dense'
           table.compact_storage = true
-          return unless column_data.empty?
-          columns << :column1 if cluster_columns.empty?
-          comparators = [table_data['comparator']]
-        end
-
-        columns.zip(comparators) do |name, type|
-          if REVERSED_TYPE_PATTERN =~ type
-            type = $1
-            clustering_order = :desc
-          end
-          table.add_clustering_column(
-            name.to_sym,
-            Type.lookup_internal(type),
-            clustering_order
-          )
-        end
-      end
-
-      def read_data_columns
-        if column_data.empty?
-          table.add_data_column(
-            (compact_value['column_name'] || :value).to_sym,
-            Type.lookup_internal(table_data['default_validator']),
-            false
-          )
         else
-          column_data.each do |result|
-            if COLLECTION_TYPE_PATTERN =~ result['validator']
-              read_collection_column(
-                result['column_name'],
-                $1.underscore,
-                *$2.split(',')
-              )
+          table.compact_storage = true
+          columns.reject! do |col|
+            %w(clustering regular).include? col['kind']
+          end
+          columns.map! do |col|
+            if col['kind'] == 'static'
+              col.merge 'kind' => 'regular'
             else
-              table.add_data_column(
-                result['column_name'].to_sym,
-                Type.lookup_internal(result['validator']),
-                result['index_name'].try(:to_sym)
-              )
+              col
             end
           end
         end
+
+        columns
+      end
+
+      def read_columns
+        recognize_storage.each do |column|
+          case column['kind']
+          when 'partition_key'
+            table.add_partition_key(
+              column['column_name'].to_sym,
+              Type.lookup_cql(column['type']),
+            )
+          when 'clustering'
+            table.add_clustering_column(
+              column['column_name'].to_sym,
+              Type.lookup_cql(column['type']),
+              column['clustering_order']
+            )
+          when 'regular'
+            name, type = column.values_at 'column_name', 'type'
+            if COLLECTION_TYPE_PATTERN =~ type
+              read_collection_column(
+                name,
+                $1,
+                *$2.split(/,\s*/)
+              )
+            else
+              table.add_data_column(
+                name.to_sym,
+                Type.lookup_cql(type),
+                index_of(name)
+              )
+            end
+          else
+            fail "unrecognized column kind #{column['kind']}"
+          end
+        end
+      end
+
+      def index_of column
+        idx = all_indexes.find do
+          |idx| idx['options'] == { 'target' => column }
+        end
+        idx && idx['index_name'].to_sym
       end
 
       def read_collection_column(name, collection_type, *internal_types)
         types = internal_types
-          .map { |internal| Type.lookup_internal(internal) }
+          .map { |internal| Type.lookup_cql(internal) }
         table.__send__("add_#{collection_type}", name.to_sym, *types)
       end
 
@@ -144,12 +139,6 @@ module Cequel
         table_data.slice(*Table::STORAGE_PROPERTIES).each do |name, value|
           table.add_property(name, value)
         end
-        compaction = JSON.parse(table_data['compaction_strategy_options'])
-          .symbolize_keys
-        compaction[:class] = table_data['compaction_strategy_class']
-        table.add_property(:compaction, compaction)
-        compression = JSON.parse(table_data['compression_parameters'])
-        table.add_property(:compression, compression)
       end
 
       def parse_composite_types(type_string)
@@ -161,8 +150,8 @@ module Cequel
       def table_data
         return @table_data if defined? @table_data
         table_query = keyspace.execute(<<-CQL, keyspace.name, table_name)
-              SELECT * FROM system.schema_columnfamilies
-              WHERE keyspace_name = ? AND columnfamily_name = ?
+              SELECT * FROM system_schema.tables
+              WHERE keyspace_name = ? AND table_name = ?
         CQL
         @table_data = table_query.first.try(:to_hash)
       end
@@ -171,35 +160,22 @@ module Cequel
         @all_columns ||=
           if table_data
             column_query = keyspace.execute(<<-CQL, keyspace.name, table_name)
-              SELECT * FROM system.schema_columns
-              WHERE keyspace_name = ? AND columnfamily_name = ?
+              SELECT * FROM system_schema.columns
+              WHERE keyspace_name = ? AND table_name = ?
             CQL
             column_query.map(&:to_hash)
           end
       end
 
-      def compact_value
-        @compact_value ||= all_columns.find do |column|
-          column['type'] == 'compact_value'
-        end || {}
-      end
-
-      def column_data
-        @column_data ||= all_columns.select do |column|
-          !column.key?('type') || column['type'] == 'regular'
-        end
-      end
-
-      def partition_columns
-        @partition_columns ||= all_columns.select do |column|
-          column['type'] == 'partition_key'
-        end
-      end
-
-      def cluster_columns
-        @cluster_columns ||= all_columns.select do |column|
-          column['type'] == 'clustering_key'
-        end
+      def all_indexes
+        @all_indexes ||=
+          if table_data
+            index_query = keyspace.execute(<<-CQL, keyspace.name, table_name)
+              SELECT * FROM system_schema.indexes
+              WHERE keyspace_name = ? AND table_name = ?
+            CQL
+            index_query.map(&:to_hash)
+          end
       end
     end
   end

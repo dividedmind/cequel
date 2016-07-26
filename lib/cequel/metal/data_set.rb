@@ -615,7 +615,7 @@ module Cequel
       # @return [Fixnum] the number of rows in this data set
       #
       def count
-        execute_cql(*count_cql).first['count']
+        [execute_cql(*count_cql).first['count'], row_limit || 10000].min
       end
 
       #
