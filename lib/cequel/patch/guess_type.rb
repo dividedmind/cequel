@@ -8,6 +8,8 @@ module Cequel
           return Cassandra::Types.map(
             Cassandra::Types.int, Cassandra::Types.int
           ) if object.empty?
+        when Cequel::Value
+          return object.type
        end
         super
       end

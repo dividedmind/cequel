@@ -225,7 +225,7 @@ module Cequel
 
       def cast(value)
         value = value.to_s(16) if value.is_a?(Integer)
-        super
+        Cequel::Value.new super, Cassandra::Types.blob
       end
 
       private

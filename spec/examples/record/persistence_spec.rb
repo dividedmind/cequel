@@ -265,24 +265,9 @@ describe Cequel::Record::Persistence do
 
     let(:picture) do
       <<-EOP
-      * ***                                                 ***
-    *  ****  *                                               ***
-   *  *  ****                                                 **
-  *  **   **                                                  **
- *  ***                     ****    **   ****                 **
-**   **           ***      * ***  *  **    ***  *    ***      **
-**   **          * ***    *   ****   **     ****    * ***     **
-**   **         *   ***  **    **    **      **    *   ***    **
-**   **        **    *** **    **    **      **   **    ***   **
-**   **        ********  **    **    **      **   ********    **
- **  **        *******   **    **    **      **   *******     **
-  ** *      *  **        **    **    **      **   **          **
-   ***     *   ****    *  *******     ******* **  ****    *   **
-    *******     *******    ******      *****   **  *******    *** *
-      ***        *****         **                   *****      ***
-                               **
-                               **
-                                **
+      ╔═╗┌─┐┌─┐ ┬ ┬┌─┐┬
+      ║  ├┤ │─┼┐│ │├┤ │
+      ╚═╝└─┘└─┘└└─┘└─┘┴─┘
       EOP
     end
 
@@ -300,7 +285,7 @@ describe Cequel::Record::Persistence do
       context 'on create' do
         it 'should save row to database' do
           expect(subject[:title]).to eq('Cequel')
-          expect(subject[:picture]).to eq(picture)
+          expect(subject[:picture].force_encoding('UTF-8')).to eq(picture)
         end
 
         it 'should mark row persisted' do
